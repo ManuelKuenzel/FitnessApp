@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Übungen für {{ level }}</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/bootstrap.min.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <style>
+      .visible {
+        display: block !important;
+      }
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-5">
+      <h1 class="text-center">Übungen für {{ level }}</h1>
+      <form action="{{ url_for('start_training') }}" method="POST">
+        <ul class="list-group mt-4">
+          {% for exercise in exercises %}
+          <li class="list-group-item">
+            <div class="row">
+              <div class="col-md-3">
+                <img
+                  src="{{ url_for('static', filename='images/' ~ exercise.image) }}"
+                  alt="{{ exercise.title }}"
+                  class="img-fluid"
+                />
+              </div>
+              <div class="col-md-9">
+                <h3>{{ exercise.title }}</h3>
+                <p>{{ exercise.description }}</p>
+                <!-- Auswahl des Trainingsmodus -->
+                <div class="form-group">
+                  <label>Trainingsmodus:</label>
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      name="mode_{{ exercise.id }}"
+                      id="mode_reps_{{ exercise.id }}"
+                      value="reps"
+                      {%
+                      if
+                      exercise.duration
+                      is
+                      not
+                      defined
+                      %}checked{%
+                      endif
+                      %}
+                      onchange="toggleMode('{{ exercise.id }}')"
+                    />
+                    <label
+                      class="form-check-label"
+                      for="mode_reps_{{ exercise.id }}"
+                    >
+                      Wiederholungen
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      name="mode_{{ exercise.id }}"
+                      id="mode_duration_{{ exercise.id }}"
+                      value="duration"
+                      {%
+                      if
+                      exercise.duration
+                      is
+                      defined
+                      %}checked{%
+                      endif
+                      %}
+                      onchange="toggleMode('{{ exercise.id }}')"
+                    />
+                    <label
+                      class="form-check-label"
+                      for="mode_duration_{{ exercise.id }}"
+                    >
+                      Dauer (Sekunden)
+                    </label>
+                  </div>
+                </div>
+                <!-- Eingabe Wiederholungen -->
+                <div
+                  id="reps_container_{{ exercise.id }}"
+                  class="{% if exercise.duration is defined %}hidden{% else %}visible{% endif %}"
+                >
+                  <label for="reps_{{ exercise.id }}">Wiederholungen:</label>
+                  <input
+                    type="number"
+                    name="reps_{{ exercise.id }}"
+                    id="reps_{{ exercise.id }}"
+                    value="{{ exercise.repetitions }}"
+                    min="1"
+                    class="form-control"
+                  />
+                </div>
+                <!-- Eingabe Dauer -->
+                <div
+                  id="duration_container_{{ exercise.id }}"
+                  class="{% if exercise.duration is defined %}visible{% else %}hidden{% endif %}"
+                >
+                  <label for="duration_{{ exercise.id }}"
+                    >Dauer (Sekunden):</label
+                  >
+                  <input
+                    type="number"
+                    name="duration_{{ exercise.id }}"
+                    id="duration_{{ exercise.id }}"
+                    value="{{ exercise.duration|default(30) }}"
+                    min="1"
+                    class="form-control"
+                  />
+                </div>
+                <!-- Eingabe Sätze -->
+                <div class="form-group mt-2">
+                  <label for="sets_{{ exercise.id }}">Sätze:</label>
+                  <input
+                    type="number"
+                    name="sets_{{ exercise.id }}"
+                    id="sets_{{ exercise.id }}"
+                    value="{{ exercise.sets }}"
+                    min="1"
+                    class="form-control"
+                  />
+                </div>
+                <!-- Checkbox zum Aktivieren der Übung -->
+                <div class="form-check">
+                  <input
+                    type="checkbox"
+                    name="selected_exercises[]"
+                    id="selected_exercise_{{ exercise.id }}"
+                    value="{{ exercise.id }}"
+                    class="form-check-input"
+                  />
+                  <label
+                    class="form-check-label"
+                    for="selected_exercise_{{ exercise.id }}"
+                  >
+                    Übung aktivieren
+                  </label>
+                </div>
+              </div>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        <button type="submit" class="btn btn-success btn-lg btn-block mt-4">
+          Trainingsplan aktivieren
+        </button>
+      </form>
+      <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3"
+        >Zurück zur Startseite</a
+      >
+    </div>
+    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+    <script>
+      function toggleMode(exerciseId) {
+        var repsContainer = document.getElementById(
+          'reps_container_' + exerciseId
+        );
+        var durationContainer = document.getElementById(
+          'duration_container_' + exerciseId
+        );
+        var repsRadio = document.getElementById('mode_reps_' + exerciseId);
+
+        if (repsRadio.checked) {
+          repsContainer.className = 'visible';
+          durationContainer.className = 'hidden';
+        } else {
+          repsContainer.className = 'hidden';
+          durationContainer.className = 'visible';
+        }
+      }
+    </script>
+  </body>
+</html>
