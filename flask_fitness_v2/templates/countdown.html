@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Übung starten</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/bootstrap.min.css') }}"
+    />
+    <script id="exercises-data" type="application/json">
+      {{ exercises | tojson | safe }}
+    </script>
+    <script>
+      const imagesBaseUrl = "{{ url_for('static', filename='images/') }}";
+
+      let currentExerciseIndex = 0;
+      let completedSets = 0;
+      let timer;
+      let isRunning = false;
+      const exercises = JSON.parse(
+        document.getElementById('exercises-data').textContent
+      );
+      const preparationTime = 3;
+
+      function startExercise() {
+        completedSets = 0;
+        const exercise = exercises[currentExerciseIndex];
+        document.getElementById('exercise-title').innerText = exercise.title;
+        // Setze das korrekte Bild der Übung
+        document.getElementById('exercise-image').src =
+          imagesBaseUrl + exercise.image;
+        // Zeige "Dauer: ..." oder "Wiederholungen: ..." an
+        if (exercise.duration !== undefined && exercise.duration > 0) {
+          document.getElementById('repetition-display').innerText =
+            'Dauer: ' + exercise.duration + ' Sekunden';
+        } else {
+          document.getElementById('repetition-display').innerText =
+            'Wiederholungen: ' + exercise.repetitions;
+        }
+        updateSetCircles();
+        document.getElementById('timer').innerText = '0:00';
+        // Stelle sicher, dass die Buttons richtig initialisiert sind
+        document.getElementById('start-button').style.display = 'inline-block';
+        document.getElementById('stop-button').style.display = 'none';
+        document.getElementById('next-exercise-button').style.display = 'none';
+        document.getElementById('cancel-button').style.display = 'inline-block';
+      }
+
+      function startTimer() {
+        if (!isRunning) {
+          isRunning = true;
+          let timeElapsed = 0;
+          timer = setInterval(() => {
+            timeElapsed++;
+            document.getElementById('timer').innerText =
+              formatTime(timeElapsed);
+          }, 1000);
+          document.getElementById('start-button').style.display = 'none';
+          document.getElementById('stop-button').style.display = 'inline-block';
+        }
+      }
+
+      function stopTimer() {
+        if (isRunning) {
+          clearInterval(timer);
+          isRunning = false;
+          document.getElementById('stop-button').style.display = 'none';
+          completedSets++;
+          updateSetCircles();
+          const exercise = exercises[currentExerciseIndex];
+          if (completedSets < exercise.sets) {
+            document.getElementById('start-button').style.display =
+              'inline-block';
+          } else {
+            document.getElementById('next-exercise-button').style.display =
+              'inline-block';
+          }
+        }
+      }
+
+      function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+      }
+
+      function updateSetCircles() {
+        const exercise = exercises[currentExerciseIndex];
+        const circlesContainer = document.getElementById('set-circles');
+        circlesContainer.innerHTML = '';
+        for (let i = 1; i <= exercise.sets; i++) {
+          const circle = document.createElement('span');
+          circle.className = 'circle';
+          if (i <= completedSets) {
+            circle.classList.add('filled');
+          }
+          circlesContainer.appendChild(circle);
+        }
+      }
+
+      function cancelExercise() {
+        clearInterval(timer);
+        isRunning = false;
+        window.location.href = "{{ url_for('level', level='einfach') }}";
+      }
+
+      function startNextExercise() {
+        currentExerciseIndex++;
+        if (currentExerciseIndex < exercises.length) {
+          startExercise();
+        } else {
+          alert('Alle Übungen abgeschlossen!');
+          window.location.href = "{{ url_for('index') }}";
+        }
+      }
+
+      window.onload = function () {
+        startExercise();
+      };
+    </script>
+    <style>
+      .circle {
+        display: inline-block;
+        width: 30px;
+        height: 30px;
+        border: 2px solid #007bff;
+        border-radius: 50%;
+        margin: 5px;
+        background-color: transparent;
+      }
+      .filled {
+        background-color: #007bff;
+      }
+      .container {
+        border: 2px solid #007bff;
+        border-radius: 10px;
+        padding: 20px;
+        background-color: #f8f9fa;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .btn {
+        width: 150px;
+      }
+      /* Einheitliche Bildgröße */
+      #exercise-image {
+        width: 250px;
+        height: 350px;
+        object-fit: cover;
+      }
+      /* Container für Start/Stop Buttons, beide Buttons in gleichem Container ohne extra margin */
+      #start-stop-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-5">
+      <h1 class="text-center">Übung starten</h1>
+      <div class="text-center mb-3">
+        <img id="exercise-image" src="" alt="Übungsbild" class="img-fluid" />
+      </div>
+      <div class="text-center">
+        <h2 id="exercise-title" class="mb-2"></h2>
+        <h3 id="repetition-display" class="mb-2"></h3>
+        <div id="set-circles" class="mb-2"></div>
+        <div id="timer" class="display-4 mb-2">0:00</div>
+        <!-- Buttons in einem vertikalen Container: -->
+        <div id="start-stop-container">
+          <button
+            id="next-exercise-button"
+            class="btn btn-primary"
+            style="display: none"
+            onclick="startNextExercise()"
+          >
+            Nächste Übung starten
+          </button>
+          <div>
+            <button
+              id="start-button"
+              class="btn btn-success"
+              onclick="startTimer()"
+            >
+              Start
+            </button>
+            <button
+              id="stop-button"
+              class="btn btn-warning"
+              style="display: none"
+              onclick="stopTimer()"
+            >
+              Stop
+            </button>
+          </div>
+          <button
+            id="cancel-button"
+            class="btn btn-danger"
+            onclick="cancelExercise()"
+          >
+            Abbrechen
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
